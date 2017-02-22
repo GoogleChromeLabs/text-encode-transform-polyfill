@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<script src="resources/text-encode-transform.js"></script>
+<script src="resources/transform-stream.js"></script>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="resources/readable-stream-from-array.js"></script>
+<script src="resources/readable-stream-to-array.js"></script>
+<script>
+'use strict';
+const inputString = 'I \u{1F499} streams';
+const expectedOutputBytes = [73, 32, 240, 159, 146, 153, 32, 115, 116, 114, 101,
+                             97, 109, 115];
+
+promise_test(() => {
+  const input = readableStreamFromArray([inputString]);
+  const output = input.pipeThrough(new TextEncoder());
+  return readableStreamToArray(output).
+      then(array => {
+        assert_equals(array.length, 1, 'length should be 1');
+        assert_array_equals(array[0], expectedOutputBytes,
+                            'output should match expected bytes');
+      });
+}, 'encoding one string of UTF-8 should give one complete chunk');
+</script>

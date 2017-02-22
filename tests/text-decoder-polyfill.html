@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<script src="resources/text-encode-transform.js"></script>
+<script src="resources/transform-stream.js"></script>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script>
+'use strict';
+
+// These tests verify that the polyfill hasn't broken existing functionality.
+const inputBytes = [73, 32, 240, 159, 146, 153, 32, 115, 116, 114, 101,
+                    97, 109, 115];
+const expectedOutputString = 'I \u{1F499} streams';
+
+test(() => {
+  const decoder = new TextDecoder();
+  const array = new Uint8Array(inputBytes);
+  const result = decoder.decode(array);
+  assert_equals(result, expectedOutputString,
+                'decode result should match expectation');
+}, 'UTF-8 decoding should work');
+
+test(() => {
+  const decoder = new TextDecoder("utf-16le");
+  const array = new Uint8Array([104, 0, 101, 0, 108, 0, 108, 0, 111, 0]);
+  const result = decoder.decode(array);
+  assert_equals(result, 'hello', 'result should be "hello"');
+}, 'UTF-16LE decoding should work');
+
+test(() => {
+  const decoder = new TextDecoder("UTF-8", {fatal: true});
+  const array = new Uint8Array(inputBytes.slice(0, 4));
+  assert_throws(new TypeError(), () => decoder.decode(array),
+                'decode should throw');
+}, 'the fatal flag should work');
+
+test(() => {
+  const decoder = new TextDecoder();
+  assert_equals(decoder.decode(new Uint8Array(inputBytes.slice(0, 4)),
+                               {stream: true}),
+                'I ', 'decode should return all available output');
+  assert_equals(decoder.decode(new Uint8Array(inputBytes.slice(4))),
+                expectedOutputString.substr(2),
+                'decode should return the remaining output');
+}, 'the stream flag to decode() should work');
+
+test(() => {
+  const decoder = new TextDecoder('utf-16le', {
+    ignoreBOM: true,
+    fatal: true
+  });
+  assert_equals(decoder.encoding, 'utf-16le',
+                'the encoding attribute should equal utf-16le');
+  assert_true(decoder.ignoreBOM, 'the ignoreBOM attribute should be true');
+  assert_true(decoder.fatal, 'the fatal attribute should be true');
+}, 'TextDecoder attributes should be set');
+
+</script>
