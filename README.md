@@ -63,7 +63,7 @@ server.
 The tests expect the TransformStream polyfill to be installed in a parallel
 directory to this one named transform-stream-polyfill. You can get the polyfill
 from
-https://github.com/whatwg/streams/blob/master/reference-implementation/lib/transform-stream.js.
+https://github.com/whatwg/streams/blob/transform-stream-polyfill/reference-implementation/contrib/transform-stream-polyfill.js
 
 The tests import the polyfills from tests/resources. By default symbolic links
 are used; if they don't work in your environment they can just be copied
