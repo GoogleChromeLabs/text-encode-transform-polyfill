@@ -30,10 +30,14 @@
 
     encode(input = '') {
       if (this._transform !== undefined) {
-        // Do not permit encode() if readable or writable are locked.
-        this._transform.readable.getReader().releaseLock();
-        this._transform.writable.getWriter().releaseLock();
+        if (this._transform.readable.locked) {
+          throw new TypeError('Cannot encode: readable stream is locked');
+        }
+        if (this._transform.writable.locked) {
+          throw new TypeError('Cannot encode: writable stream is locked');
+        }
       }
+
       return this._realEncoder.encode(input);
     }
 
@@ -70,12 +74,16 @@
       return this._realDecoder.ignoreBOM;
     }
 
-    decode(input = '', options = {}) {
+    decode(input = undefined, options = {}) {
       if (this._transform !== undefined) {
-        // Do not permit encode() if readable or writable are locked.
-        this._transform.readable.getReader().releaseLock();
-        this._transform.writable.getWriter().releaseLock();
+        if (this._transform.readable.locked) {
+          throw new TypeError('Cannot decode: readable stream is locked');
+        }
+        if (this._transform.writable.locked) {
+          throw new TypeError('Cannot decode: writable stream is locked');
+        }
       }
+
       return this._realDecoder.decode(input, options);
     }
 
@@ -105,7 +113,8 @@
   }
 
   function createEncodeTransform(textEncoder) {
-    textEncoder._transform = new TransformStream(new TextEncodeTransformer(textEncoder._realEncoder));
+    textEncoder._transform = new TransformStream(
+        new TextEncodeTransformer(textEncoder._realEncoder));
   }
 
   class TextDecodeTransformer {
@@ -121,12 +130,12 @@
       // If {fatal: false} in options (the default), then the final call to
       // decode() can produce extra output (usually the unicode replacement
       // character 0xFFFD). When fatal is true, this call is just used for its
-      // side-effect of throwing a TypeError exception if the input is incomplete.
+      // side-effect of throwing a TypeError exception if the input is
+      // incomplete.
       var output = this._decoder.decode();
       if (output !== '') {
         controller.enqueue(output);
       }
-      controller.close();
     }
   }
 
@@ -137,5 +146,4 @@
 
   self['TextEncoder'] = TextEncoder;
   self['TextDecoder'] = TextDecoder;
-
 })();
