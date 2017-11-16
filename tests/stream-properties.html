@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<script src="resources/text-encode-transform.js"></script>
+<script src="resources/transform-stream.js"></script>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script>
+'use strict';
+
+test(() => {
+  const te = new TextEncoder();
+  assert_idl_attribute(te, 'readable', 'readable property must be present');
+  assert_readonly(te, 'readable', 'readable property must be read-only');
+  assert_equals(typeof ReadableStream.prototype.getReader.call(te.readable),
+                'object', 'readable property must pass brand check');
+  assert_idl_attribute(te, 'writable', 'writable property must be present');
+  assert_readonly(te, 'writable', 'writable property must be read-only');
+  assert_equals(typeof WritableStream.prototype.getWriter.call(te.writable),
+                'object', 'writable property must pass brand check');
+}, 'TextEncoder object must have readable and writable properties');
+
+test(() => {
+  const td = new TextDecoder();
+  assert_idl_attribute(td, 'readable', 'readable property must be present');
+  assert_readonly(td, 'readable', 'readable property must be read-only');
+  assert_equals(typeof ReadableStream.prototype.getReader.call(td.readable),
+                'object', 'readable property must pass brand check');
+  assert_idl_attribute(td, 'writable', 'writable property must be present');
+  assert_readonly(td, 'writable', 'writable property must be read-only');
+  assert_equals(typeof WritableStream.prototype.getWriter.call(td.writable),
+                'object', 'writable property must pass brand check');
+}, 'TextDecoder object must have readable and writable properties');
+
+</script>
