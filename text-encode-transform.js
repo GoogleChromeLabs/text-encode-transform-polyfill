@@ -17,97 +17,94 @@
 (function() {
   'use strict';
 
-  if (TextEncoder.prototype.readable !== undefined &&
-      TextEncoder.prototype.writable !== undefined &&
-      TextDecoder.prototype.readable !== undefined &&
-      TextDecoder.prototype.writable !== undefined) {
+  if (typeof self.TextEncoder !== 'function') {
+    throw new ReferenceError('TextEncoder implementation required');
+  }
+
+  if (typeof self.TextDecoder !== 'function') {
+    throw new ReferenceError('TextDecoder implementation required');
+  }
+
+  if (self.TextEncoder.prototype.readable !== undefined &&
+      self.TextEncoder.prototype.writable !== undefined &&
+      self.TextDecoder.prototype.readable !== undefined &&
+      self.TextDecoder.prototype.writable !== undefined) {
     return;
   }
 
-  const real = {
-    TextEncoder: self.TextEncoder,
-    TextDecoder: self.TextDecoder
-  };
+  const transform = Symbol('transform');
 
-  class TextEncoder {
-    constructor() {
-      this._realEncoder = new real.TextEncoder();
-      this._transform = undefined;
+  function throwIfLocked(obj) {
+    const ts = obj[transform];
+    if (ts === undefined) {
+      return;
     }
 
-    encode(input = '') {
-      if (this._transform !== undefined) {
-        if (this._transform.readable.locked) {
-          throw new TypeError('Cannot encode: readable stream is locked');
-        }
-        if (this._transform.writable.locked) {
-          throw new TypeError('Cannot encode: writable stream is locked');
-        }
-      }
-
-      return this._realEncoder.encode(input);
+    if (ts.readable.locked) {
+      throw new TypeError('readable is locked');
     }
 
-    get readable() {
-      if (this._transform === undefined) {
-        createEncodeTransform(this);
-      }
-      return this._transform.readable;
-    }
-
-    get writable() {
-      if (this._transform === undefined) {
-        createEncodeTransform(this);
-      }
-      return this._transform.writable;
+    if (ts.writable.locked) {
+      throw new TypeError('writable is locked');
     }
   }
 
-  class TextDecoder {
-    constructor(label = 'utf-8', options = {}) {
-      this._realDecoder = new real.TextDecoder(label, options);
-      this._transform = undefined;
-    }
+  const originalEncode = self.TextEncoder.prototype.encode;
+  const originalDecode = self.TextDecoder.prototype.decode;
 
-    get encoding() {
-      return this._realDecoder.encoding;
-    }
-
-    get fatal() {
-      return this._realDecoder.fatal;
-    }
-
-    get ignoreBOM() {
-      return this._realDecoder.ignoreBOM;
-    }
-
-    decode(input = undefined, options = {}) {
-      if (this._transform !== undefined) {
-        if (this._transform.readable.locked) {
-          throw new TypeError('Cannot decode: readable stream is locked');
-        }
-        if (this._transform.writable.locked) {
-          throw new TypeError('Cannot decode: writable stream is locked');
-        }
-      }
-
-      return this._realDecoder.decode(input, options);
-    }
-
-    get readable() {
-      if (this._transform === undefined) {
-        createDecodeTransform(this);
-      }
-      return this._transform.readable;
-    }
-
-    get writable() {
-      if (this._transform === undefined) {
-        createDecodeTransform(this);
-      }
-      return this._transform.writable;
-    }
+  function encode(input = '') {
+    throwIfLocked(this);
+    return originalEncode.call(this, input);
   }
+
+  self.TextEncoder.prototype.encode = encode;
+
+  function decode(input = undefined, options = {}) {
+    throwIfLocked(this);
+    return originalDecode.call(this, input, options);
+  }
+
+  self.TextDecoder.prototype.decode = decode;
+
+  function addReadableAndWritable(prototype, constructor) {
+    function readable() {
+      if (!this[transform]) {
+        this[transform] = constructor(this);
+      }
+      return this[transform].readable;
+    }
+
+    function writable() {
+      if (!this[transform]) {
+        this[transform] = constructor(this);
+      }
+      return this[transform].writable;
+    }
+
+    Object.defineProperty(prototype, 'readable',
+                          {
+                            configurable: true,
+                            enumerable: true,
+                            configurable: true,
+                            get: readable
+                          });
+
+    Object.defineProperty(prototype, 'writable',
+                          {
+                            configurable: true,
+                            enumerable: true,
+                            configurable: true,
+                            get: writable
+                          });
+  }
+
+  addReadableAndWritable(self.TextEncoder.prototype, encoder => {
+    return new TransformStream(new TextEncodeTransformer(encoder));
+  });
+
+  addReadableAndWritable(self.TextDecoder.prototype, decoder => {
+    return new TransformStream(new TextDecodeTransformer(decoder));
+  });
 
   class TextEncodeTransformer {
     constructor(encoder) {
@@ -115,13 +112,8 @@
     }
 
     transform(chunk, controller) {
-      controller.enqueue(this._encoder.encode(chunk));
+      controller.enqueue(originalEncode.call(this._encoder, chunk));
     }
-  }
-
-  function createEncodeTransform(textEncoder) {
-    textEncoder._transform = new TransformStream(
-        new TextEncodeTransformer(textEncoder._realEncoder));
   }
 
   class TextDecodeTransformer {
@@ -130,7 +122,8 @@
     }
 
     transform(chunk, controller) {
-      controller.enqueue(this._decoder.decode(chunk, {stream: true}));
+      controller.enqueue(originalDecode.call(this._decoder, chunk,
+                                             {stream: true}));
     }
 
     flush(controller) {
@@ -139,18 +132,10 @@
       // character 0xFFFD). When fatal is true, this call is just used for its
       // side-effect of throwing a TypeError exception if the input is
       // incomplete.
-      var output = this._decoder.decode();
+      var output = originalDecode.call(this._decoder);
       if (output !== '') {
         controller.enqueue(output);
       }
     }
   }
-
-  function createDecodeTransform(textDecoder) {
-    textDecoder._transform = new TransformStream(
-        new TextDecodeTransformer(textDecoder._realDecoder));
-  }
-
-  self['TextEncoder'] = TextEncoder;
-  self['TextDecoder'] = TextDecoder;
 })();
