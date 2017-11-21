@@ -17,6 +17,13 @@
 (function() {
   'use strict';
 
+  if (TextEncoder.prototype.readable !== undefined &&
+      TextEncoder.prototype.writable !== undefined &&
+      TextDecoder.prototype.readable !== undefined &&
+      TextDecoder.prototype.writable !== undefined) {
+    return;
+  }
+
   const real = {
     TextEncoder: self.TextEncoder,
     TextDecoder: self.TextDecoder
