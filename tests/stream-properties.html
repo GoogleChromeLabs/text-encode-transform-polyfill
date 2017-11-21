@@ -8,11 +8,11 @@
 
 test(() => {
   const te = new TextEncoder();
-  assert_idl_attribute(te, 'readable', 'readable property must be present');
+  assert_inherits(te, 'readable', 'readable property must be present');
   assert_readonly(te, 'readable', 'readable property must be read-only');
   assert_equals(typeof ReadableStream.prototype.getReader.call(te.readable),
                 'object', 'readable property must pass brand check');
-  assert_idl_attribute(te, 'writable', 'writable property must be present');
+  assert_inherits(te, 'writable', 'writable property must be present');
   assert_readonly(te, 'writable', 'writable property must be read-only');
   assert_equals(typeof WritableStream.prototype.getWriter.call(te.writable),
                 'object', 'writable property must pass brand check');
@@ -20,11 +20,11 @@ test(() => {
 
 test(() => {
   const td = new TextDecoder();
-  assert_idl_attribute(td, 'readable', 'readable property must be present');
+  assert_inherits(td, 'readable', 'readable property must be present');
   assert_readonly(td, 'readable', 'readable property must be read-only');
   assert_equals(typeof ReadableStream.prototype.getReader.call(td.readable),
                 'object', 'readable property must pass brand check');
-  assert_idl_attribute(td, 'writable', 'writable property must be present');
+  assert_inherits(td, 'writable', 'writable property must be present');
   assert_readonly(td, 'writable', 'writable property must be read-only');
   assert_equals(typeof WritableStream.prototype.getWriter.call(td.writable),
                 'object', 'writable property must pass brand check');
