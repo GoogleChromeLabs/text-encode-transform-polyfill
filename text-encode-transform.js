@@ -85,7 +85,6 @@
                           {
                             configurable: true,
                             enumerable: true,
-                            configurable: true,
                             get: readable
                           });
 
@@ -93,7 +92,6 @@
                           {
                             configurable: true,
                             enumerable: true,
-                            configurable: true,
                             get: writable
                           });
   }

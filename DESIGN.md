@@ -134,7 +134,7 @@ None known.
  - A previous implementation wrapped the existing TextEncoder and TextDecoder
    APIs. This was considerably simpler and easier to understand, but was
    inefficient.
- - For strict compliance the `readable` and `writable` getters should verify
+ - For strict compliance, the `readable` and `writable` getters should verify
    that `this` is of the correct type before attaching a TransformStream to
    it. However, in the context of a polyfill this would interfere with
    extensibility and so the check is intentionally omitted.
