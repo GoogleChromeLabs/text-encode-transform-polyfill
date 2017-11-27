@@ -1,5 +1,5 @@
 # Text Encoder Streaming Prollyfill
-ricea@chromium.org - last updated 3 March 2017
+ricea@chromium.org - last updated 16 November 2017
 
 The TextEncoder and TextDecoder APIs provide conversions between bytes and
 strings for Javascript in the browser. The Streams API is an API for processing
@@ -61,6 +61,22 @@ The prollyfill builds upon [The Web
 Platform](http://tess.oconnor.cx/2009/05/what-the-web-platform-is) and is
 implemented in [Javascript](http://www.ecma-international.org/ecma-262/6.0/).
 
+### Implementation
+
+The prototypes of the existing TextEncoder and TextDecoder classes are modified
+to add the extra functionality. `readable` and `writable` getters are added to
+the prototype. These work by delegating to a
+[TransformStream](https://streams.spec.whatwg.org/#ts) object, which is lazily
+created the first time they are accessed. The TransformStream is stored as a
+symbol property on the object, to avoid interfering with the usable namespace.
+
+The `encode()` and `decode()` methods are wrapped to verify that the readable
+and writable sides aren't locked before proceeding with the operation.
+
+`encode`, `decode` and the `readable` and `writable` getters are all defined as
+functions of the appropriate names, so that the `name` property on the function
+objects will be correct.
+
 ### Scalability
 
 The time taken to transform text to bytes and vice-versa is proportional to the
@@ -115,6 +131,12 @@ None known.
 
  - Supporting ES5 would have been possible, but would have made the code harder
    to understand.
- - This implementation wraps the existing TextEncoder and TextDecoder APIs. It
-   would be possible to monkey-patch them in place instead, but it would be more
-   complex.
+ - A previous implementation wrapped the existing TextEncoder and TextDecoder
+   APIs. This was considerably simpler and easier to understand, but was
+   inefficient.
+ - For strict compliance, the `readable` and `writable` getters should verify
+   that `this` is of the correct type before attaching a TransformStream to
+   it. However, in the context of a polyfill this would interfere with
+   extensibility and so the check is intentionally omitted.
+ - Similarly, no attempt is made to defend against changes to the global object
+   made by other code on the same page.
