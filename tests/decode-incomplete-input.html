@@ -10,27 +10,22 @@
 
 const inputBytes = [229];
 
-promise_test(() => {
+promise_test(async () => {
   const input = readableStreamFromArray([new Uint8Array(inputBytes)]);
   const output = input.pipeThrough(new TextDecoder());
-  return readableStreamToArray(output)
-      .then(array => {
-        assert_array_equals(array, ['', '\uFFFD'], 'array should match expectation');
-      });
+  const array = await readableStreamToArray(output);
+  assert_array_equals(array, ['', '\uFFFD'], 'array should match expectation');
 }, 'incomplete input with error mode "replacement" should end with a ' +
-    'replacement character');
+   'replacement character');
 
-promise_test(t => {
+promise_test(async t => {
   const input = readableStreamFromArray([new Uint8Array(inputBytes)]);
-  const output = input.pipeThrough(
-      new TextDecoder('utf-8', {fatal: true}));
+  const output = input.pipeThrough(new TextDecoder('utf-8', {fatal: true}));
   const reader = output.getReader();
-  return reader.read()
-      .then(result => {
-        assert_equals(result.value, '', 'first chunk should be empty');
-        return promise_rejects(t, new TypeError(), reader.read(),
-                               'second read should reject');
-      });
+  const result = await reader.read()
+  assert_equals(result.value, '', 'first chunk should be empty');
+  await promise_rejects(t, new TypeError(), reader.read(),
+                        'second read should reject');
 }, 'incomplete input with error mode "fatal" should error the stream');
 
 </script>
