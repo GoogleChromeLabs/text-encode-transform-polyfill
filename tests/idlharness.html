@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<!--
+    This is a fork of encoding/idlharness.html and should be merged with it
+    rather than remaining separate.
+
+    The following failures happen with the prollyfill due to not enforcing
+    brand checks:
+
+FAIL TextDecoder interface: attribute readable assert_throws: getting property on prototype object must throw TypeError function "function () { [native code] }" did not throw\n
+FAIL TextDecoder interface: attribute writable assert_throws: getting property on prototype object must throw TypeError function "function () { [native code] }" did not throw\n
+FAIL TextEncoder interface: attribute readable assert_throws: getting property on prototype object must throw TypeError function "function () { [native code] }" did not throw\n
+FAIL TextEncoder interface: attribute writable assert_throws: getting property on prototype object must throw TypeError function "function () { [native code] }" did not throw\n
+
+-->
+<title>idlharness test: Encoding Living Standard API</title>
+<link rel="author" title="Joshua Bell" href="mailto:jsbell@google.com" />
+<link rel="help" href="https://encoding.spec.whatwg.org/#api"/>
+
+<!-- BEGIN includes for testing prollyfill -->
+<script src="resources/text-encode-transform.js"></script>
+<script src="resources/transform-stream.js"></script>
+<!-- END includes for testing prollyfill -->
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/resources/WebIDLParser.js"></script>
+<script src="/resources/idlharness.js"></script>
+
+<h1>idlharness test</h1>
+<p>This test validates the WebIDL included in the Encoding Living Standard.</p>
+
+<script type="text/plain" class="untested-idl">
+interface Window {};
+interface ReadableStream {};
+interface WritableStream {};
+</script>
+
+<script type="text/plain" class="idl">
+// 7.1 Interface TextDecoder
+
+dictionary TextDecoderOptions {
+  boolean fatal = false;
+  boolean ignoreBOM = false;
+};
+
+dictionary TextDecodeOptions {
+  boolean stream = false;
+};
+
+[Constructor(optional DOMString label = "utf-8", optional TextDecoderOptions options),
+ Exposed=(Window,Worker)]
+interface TextDecoder {
+  readonly attribute DOMString encoding;
+  readonly attribute boolean fatal;
+  readonly attribute boolean ignoreBOM;
+  readonly attribute ReadableStream readable;
+  readonly attribute WritableStream writable;
+  USVString decode(optional BufferSource input, optional TextDecodeOptions options);
+};
+
+// 7.2 Interface TextEncoder
+
+[Constructor,
+ Exposed=(Window,Worker)]
+interface TextEncoder {
+  readonly attribute DOMString encoding;
+  readonly attribute ReadableStream readable;
+  readonly attribute WritableStream writable;
+  [NewObject] Uint8Array encode(optional USVString input = "");
+};
+</script>
+
+<script>
+function select(selector) {
+  return [].slice.call(document.querySelectorAll(selector))
+    .map(function(e) { return e.textContent; })
+    .join('\n\n');
+}
+
+var idl = select('.idl')
+var untested = select('.untested-idl');
+var idl_array = new IdlArray();
+idl_array.add_untested_idls(untested);
+idl_array.add_idls(idl);
+idl_array.add_objects({
+  TextEncoder: ['new TextEncoder()'],
+  TextDecoder: ['new TextDecoder()']
+});
+idl_array.test();
+</script>

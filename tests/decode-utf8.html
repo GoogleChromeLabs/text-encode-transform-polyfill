@@ -12,13 +12,11 @@ const inputBytes = [73, 32, 240, 159, 146, 153, 32, 115, 116, 114, 101,
                     97, 109, 115];
 const expectedOutputString = 'I \u{1F499} streams';
 
-promise_test(() => {
+promise_test(async () => {
   const input = readableStreamFromArray([new Uint8Array(inputBytes)]);
   const output = input.pipeThrough(new TextDecoder());
-  return readableStreamToArray(output).
-      then(array => {
-        assert_array_equals(array, [expectedOutputString],
-                            'the output should be in one chunk');
-      });
+  const array = await readableStreamToArray(output);
+  assert_array_equals(array, [expectedOutputString],
+                      'the output should be in one chunk');
 }, 'decoding one UTF-8 chunk should give one output string');
 </script>
