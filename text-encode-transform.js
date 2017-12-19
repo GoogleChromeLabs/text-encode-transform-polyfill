@@ -25,10 +25,10 @@
     throw new ReferenceError('TextDecoder implementation required');
   }
 
-  if (self.TextEncoder.prototype.readable !== undefined &&
-      self.TextEncoder.prototype.writable !== undefined &&
-      self.TextDecoder.prototype.readable !== undefined &&
-      self.TextDecoder.prototype.writable !== undefined) {
+  if ('readable' in self.TextEncoder.prototype &&
+      'writable' in self.TextEncoder.prototype &&
+      'readable' in self.TextDecoder.prototype &&
+      'writable' in self.TextDecoder.prototype) {
     return;
   }
 
