@@ -8,16 +8,18 @@
 <script>
 'use strict';
 const inputString = 'I \u{1F499} streams';
-const expectedOutputBytes = [73, 32, 240, 159, 146, 153, 32, 115, 116, 114, 101,
-                             97, 109, 115];
-const astralCharacter = '\u{1F499}';
-const astralCharacterEncoded = [240, 159, 146, 153];
+const expectedOutputBytes = [0x49, 0x20, 0xf0, 0x9f, 0x92, 0x99, 0x20, 0x73,
+                             0x74, 0x72, 0x65, 0x61, 0x6d, 0x73];
+// This is a character that must be represented in two code units in a string,
+// ie. it is not in the Basic Multilingual Plane.
+const astralCharacter = '\u{1F499}';  // BLUE HEART
+const astralCharacterEncoded = [0xf0, 0x9f, 0x92, 0x99];
 const leading = astralCharacter[0];
 const trailing = astralCharacter[1];
-const replacementEncoded = [239, 191, 189];
+const replacementEncoded = [0xef, 0xbf, 0xbd];
 const emptyChunk = [];
 
-// These tests assume that the implementation correct classifies leading and
+// These tests assume that the implementation correctly classifies leading and
 // trailing surrogates and treats all the code units in each set equivalently.
 
 const testCases = [
