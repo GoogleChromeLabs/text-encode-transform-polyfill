@@ -107,10 +107,27 @@
   class TextEncodeTransformer {
     constructor(encoder) {
       this._encoder = encoder;
+      this._carry = undefined;
     }
 
     transform(chunk, controller) {
+      if (this._carry !== undefined) {
+        chunk = this._carry + chunk;
+        this._carry = undefined;
+      }
+      const terminalCodeUnit = chunk.charCodeAt(chunk.length - 1);
+      if (terminalCodeUnit >= 0xD800 && terminalCodeUnit < 0xDC00) {
+        this._carry = chunk.substring(chunk.length - 1);
+        chunk = chunk.substring(0, chunk.length - 1);
+      }
       controller.enqueue(originalEncode.call(this._encoder, chunk));
+    }
+
+    flush(controller) {
+      if (this._carry !== undefined) {
+        controller.enqueue(originalEncode.call(this._encoder, this._carry));
+        this._carry = undefined;
+      }
     }
   }
 

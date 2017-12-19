@@ -8,15 +8,99 @@
 <script>
 'use strict';
 const inputString = 'I \u{1F499} streams';
-const expectedOutputBytes = [73, 32, 240, 159, 146, 153, 32, 115, 116, 114, 101,
-                             97, 109, 115];
+const expectedOutputBytes = [0x49, 0x20, 0xf0, 0x9f, 0x92, 0x99, 0x20, 0x73,
+                             0x74, 0x72, 0x65, 0x61, 0x6d, 0x73];
+// This is a character that must be represented in two code units in a string,
+// ie. it is not in the Basic Multilingual Plane.
+const astralCharacter = '\u{1F499}';  // BLUE HEART
+const astralCharacterEncoded = [0xf0, 0x9f, 0x92, 0x99];
+const leading = astralCharacter[0];
+const trailing = astralCharacter[1];
+const replacementEncoded = [0xef, 0xbf, 0xbd];
+const emptyChunk = [];
 
-promise_test(async () => {
-  const input = readableStreamFromArray([inputString]);
-  const output = input.pipeThrough(new TextEncoder());
-  const array = await readableStreamToArray(output);
-  assert_equals(array.length, 1, 'length should be 1');
-  assert_array_equals(array[0], expectedOutputBytes,
-                      'output should match expected bytes');
-}, 'encoding one string of UTF-8 should give one complete chunk');
+// These tests assume that the implementation correctly classifies leading and
+// trailing surrogates and treats all the code units in each set equivalently.
+
+const testCases = [
+  {
+    input: [inputString],
+    output: [expectedOutputBytes],
+    description: 'encoding one string of UTF-8 should give one complete chunk'
+  },
+  {
+    input: [leading, trailing],
+    output: [emptyChunk, astralCharacterEncoded],
+    description: 'a character split between chunks should be correctly encoded'
+  },
+  {
+    input: [leading],
+    output: [emptyChunk, replacementEncoded],
+    description: 'a stream ending in a leading surrogate should emit a ' +
+        'replacement character as a final chunk'
+  },
+  {
+    input: [leading, astralCharacter],
+    output: [emptyChunk, replacementEncoded.concat(astralCharacterEncoded)],
+    description: 'an unmatched surrogate at the end of a chunk followed by ' +
+        'an astral character in the next chunk should be replaced with ' +
+        'the replacement character at the start of the next output chunk'
+  },
+  {
+    input: [leading, 'A'],
+    output: [emptyChunk, replacementEncoded.concat([65])],
+    description: 'an unmatched surrogate at the end of a chunk followed by ' +
+        'an ascii character in the next chunk should be replaced with ' +
+        'the replacement character at the start of the next output chunk'
+  },
+  {
+    input: [leading, leading, trailing],
+    output: [emptyChunk, replacementEncoded, astralCharacterEncoded],
+    description: 'an unmatched surrogate at the end of a chunk followed by ' +
+        'a plane 1 character split into two chunks should result in ' +
+        'the encoded plane 1 character appearing in the last output chunk'
+  },
+  {
+    input: [leading, leading],
+    output: [emptyChunk, replacementEncoded, replacementEncoded],
+    description: 'two leading chunks should result in an empty chunk and ' +
+        'two replacement characters'
+  },
+  {
+    input: [leading + leading, trailing],
+    output: [replacementEncoded, astralCharacterEncoded],
+    description: 'a non-terminal unpaired leading surrogate should ' +
+        'immediately be replaced'
+  },
+  {
+    input: [trailing, astralCharacter],
+    output: [replacementEncoded, astralCharacterEncoded],
+    description: 'a terminal unpaired trailing surrogate should ' +
+        'immediately be replaced'
+  },
+  {
+    input: [leading, '', trailing],
+    output: [emptyChunk, emptyChunk, astralCharacterEncoded],
+    description: 'a leading surrogate chunk should be carried past empty chunks'
+  },
+  {
+    input: [leading, ''],
+    output: [emptyChunk, emptyChunk, replacementEncoded],
+    description: 'a leading surrogate chunk should error when it is clear ' +
+        'it didn\'t form a pair'
+  }
+];
+
+for (const {input, output, description} of testCases) {
+  promise_test(async () => {
+    const inputStream = readableStreamFromArray(input);
+    const outputStream = inputStream.pipeThrough(new TextEncoder());
+    const chunkArray = await readableStreamToArray(outputStream);
+    assert_equals(chunkArray.length, output.length,
+                  'number of chunks should match');
+    for (let i = 0; i < output.length; ++i) {
+      assert_array_equals(chunkArray[i], output[i], `chunk ${i} should match`);
+    }
+  }, description);
+}
 </script>
