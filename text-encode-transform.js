@@ -111,6 +111,7 @@
     }
 
     transform(chunk, controller) {
+      chunk = String(chunk);
       if (this._carry !== undefined) {
         chunk = this._carry + chunk;
         this._carry = undefined;
