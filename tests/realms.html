@@ -20,9 +20,10 @@ setup({explicit_done: true});
 
 function createRealm() {
   let iframe = document.createElement('iframe');
+  const scriptEndTag = '<' + '/script>';
   iframe.srcdoc = `<!doctype html>
-<script src="resources/text-encode-transform.js">${'<'}/script>
-<script src="resources/transform-stream.js">${'<'}/script>
+<script src="resources/text-encode-transform.js">${scriptEndTag}
+<script src="resources/transform-stream.js">${scriptEndTag}
 <script>
 onmessage = event => {
   if (event.source !== window.parent) {
@@ -149,7 +150,7 @@ window.onload = () => {
 function runGenericTests(classname) {
   promise_test(async () => {
     const obj = await evalInRealmAndReturn(
-      constructedRealm, `new parent.constructorRealm.${classname}()`);
+        constructedRealm, `new parent.constructorRealm.${classname}()`);
     assert_equals(obj.constructor, constructorRealm[classname],
                   'obj should be in constructor realm');
   }, `a ${classname} object should be associated with the realm the ` +
@@ -175,7 +176,7 @@ function runGenericTests(classname) {
     assert_equals(writable.constructor, methodRealm.WritableStream,
                   'writable should be in method realm');
   }, `${classname}\'s readable and writable attributes should come from the ` +
-      'same realm as the method definition');
+     'same realm as the method definition');
 }
 
 function runTextEncoderTests() {
@@ -253,8 +254,8 @@ function runTextDecoderTests() {
     assert_equals(result.constructor, constructorRealm.Object,
                   'result should be in constructor realm');
     // Strings are always in the current realm, so no point in checking.
-   }, 'the result object when write is called with a pending ' +
-      'read should come from the same realm as the constructor of TextDecoder');
+  }, 'the result object when write is called with a pending ' +
+     'read should come from the same realm as the constructor of TextDecoder');
 
   promise_test(async t => {
     const objId = await constructAndStore('TextDecoder');
