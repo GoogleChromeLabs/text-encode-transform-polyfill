@@ -33,51 +33,80 @@
   }
 
   const transform = Symbol('transform');
+  const mode = Symbol('mode');
 
-  function throwIfLocked(obj) {
+  function setModeAndThrowIfNeeded(obj) {
+    const currentMode = obj[mode];
+
+    if (currentMode === 'method') {
+      return;
+    }
+
+    if (currentMode === 'transform') {
+      throw new TypeError('transform stream has been used');
+    }
+
     const ts = obj[transform];
     if (ts === undefined) {
+      obj[mode] = 'method';
       return;
     }
 
     if (ts.readable.locked) {
+      obj[mode] = 'transform';
       throw new TypeError('readable is locked');
     }
 
     if (ts.writable.locked) {
+      obj[mode] = 'transform';
       throw new TypeError('writable is locked');
     }
+
+    // Permanently lock "readable" and "writable". We don't actually need the
+    // reader and writer for anything, so just abandon them.
+    ts.readable.getReader();
+    ts.writable.getWriter();
+
+    obj[mode] = 'method';
   }
 
   const originalEncode = self.TextEncoder.prototype.encode;
   const originalDecode = self.TextDecoder.prototype.decode;
 
   function encode(input = '') {
-    throwIfLocked(this);
+    setModeAndThrowIfNeeded(this);
     return originalEncode.call(this, input);
   }
 
   self.TextEncoder.prototype.encode = encode;
 
   function decode(input = undefined, options = {}) {
-    throwIfLocked(this);
+    setModeAndThrowIfNeeded(this);
     return originalDecode.call(this, input, options);
   }
 
   self.TextDecoder.prototype.decode = decode;
 
   function addReadableAndWritable(prototype, constructor) {
-    function readable() {
-      if (!this[transform]) {
-        this[transform] = constructor(this);
+    function constructTransformStreamIfNeeded(obj) {
+      if (!obj[transform]) {
+        const ts = constructor(obj);
+        if (obj[mode] === 'method') {
+          // They should be created in a locked state.
+          ts.readable.getReader();
+          ts.writable.getWriter();
+        }
+        obj[transform] = ts;
       }
+    }
+
+    function readable() {
+      constructTransformStreamIfNeeded(this);
       return this[transform].readable;
     }
 
     function writable() {
-      if (!this[transform]) {
-        this[transform] = constructor(this);
-      }
+      constructTransformStreamIfNeeded(this);
       return this[transform].writable;
     }
 
@@ -111,6 +140,14 @@
     }
 
     transform(chunk, controller) {
+      if (this._encoder[mode] === 'method') {
+        throw new TypeError('method API has been used');
+      }
+
+      if (this._encoder[mode] !== 'transform') {
+        this._encoder[mode] = 'transform';
+      }
+
       chunk = String(chunk);
       if (this._carry !== undefined) {
         chunk = this._carry + chunk;
@@ -138,6 +175,14 @@
     }
 
     transform(chunk, controller) {
+      if (this._decoder[mode] === 'method') {
+        throw new TypeError('method API has been used');
+      }
+
+      if (this._decoder[mode] !== 'transform') {
+        this._decoder[mode] = 'transform';
+      }
+
       controller.enqueue(originalDecode.call(this._decoder, chunk,
                                              {stream: true}));
     }

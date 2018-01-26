@@ -17,7 +17,9 @@ test(() => {
   assert_throws(new TypeError(), () => encoder.encode(string),
                 'encode should throw');
   writer.releaseLock();
-  assert_array_equals(encoder.encode(string), bytes, 'encode should not throw');
+  assert_throws(new TypeError(), () => encoder.encode(string),
+                'encode should still throw');
+  assert_false(encoder.readable.locked, 'readable should not be locked');
 }, 'locking TextEncoder writable should prevent encode()');
 
 test(() => {
@@ -26,8 +28,57 @@ test(() => {
   assert_throws(new TypeError(), () => encoder.encode(string),
                 'encode should throw');
   reader.releaseLock();
-  assert_array_equals(encoder.encode(string), bytes, 'encode should not throw');
+  assert_throws(new TypeError(), () => encoder.encode(string),
+                'encode should still throw');
+  assert_false(encoder.writable.locked, 'writable should not be locked');
 }, 'locking TextEncoder readable should prevent encode()');
+
+test(() => {
+  const encoder = new TextEncoder();
+  assert_array_equals(bytesAsArray, encoder.encode(string), 'encode should work');
+  assert_true(encoder.readable.locked, 'readable should be locked');
+  assert_true(encoder.writable.locked, 'writable should be locked');
+}, 'calling the encode() method should lock the readable and writable');
+
+test(() => {
+  const encoder = new TextEncoder();
+  const reader = encoder.readable.getReader();
+  reader.releaseLock();
+  assert_array_equals(bytesAsArray, encoder.encode(string),
+                      'encode should work');
+  assert_true(encoder.readable.locked, 'readable should be locked');
+  assert_true(encoder.writable.locked, 'writable should be locked');
+}, 'locking then unlocking the readable should not block the encode() method');
+
+test(() => {
+  const encoder = new TextEncoder();
+  const writer = encoder.writable.getWriter();
+  // The underlying transform is not called because there is backpressure
+  // because nothing is reading.
+  writer.write(string);
+  writer.releaseLock();
+  assert_array_equals(bytesAsArray, encoder.encode(string),
+                      'encode should work');
+  assert_true(encoder.readable.locked, 'readable should be locked');
+  assert_true(encoder.writable.locked, 'writable should be locked');
+}, 'locking, writing, then unlocking the writable should not block the ' +
+   'encode() method');
+
+promise_test(async () => {
+  const encoder = new TextEncoder();
+  const writer = encoder.writable.getWriter();
+  writer.write(string);
+  writer.releaseLock();
+  const reader = encoder.readable.getReader();
+  const { value, done } = await reader.read();
+  assert_false(done);
+  assert_array_equals(bytesAsArray, value, 'encoding should have happened');
+  reader.releaseLock();
+  assert_throws(new TypeError(), () => encoder.encode(string),
+                'encode should throw');
+  assert_false(encoder.readable.locked, 'readable should not be locked');
+  assert_false(encoder.writable.locked, 'writable should not be locked');
+}, 'once a streaming transform has taken place, encode() should throw');
 
 test(() => {
   const decoder = new TextDecoder();
@@ -35,8 +86,9 @@ test(() => {
   assert_throws(new TypeError(), () => decoder.decode(bytesAsArray),
                 'decode should throw');
   writer.releaseLock();
-  assert_equals(decoder.decode(bytesAsArray), string,
-                'decode should not throw');
+  assert_throws(new TypeError(), () => decoder.decode(bytesAsArray),
+                'decode should still throw');
+  assert_false(decoder.readable.locked, 'readable should not be locked');
 }, 'locking TextDecoder writable should prevent decode()');
 
 test(() => {
@@ -45,8 +97,55 @@ test(() => {
   assert_throws(new TypeError(), () => decoder.decode(bytesAsArray),
                 'decode should throw');
   reader.releaseLock();
-  assert_equals(decoder.decode(bytesAsArray), string,
-                'decode should not throw');
+  assert_throws(new TypeError(), () => decoder.decode(bytesAsArray),
+                'decode should still throw');
+  assert_false(decoder.writable.locked, 'writable should not be locked');
 }, 'locking TextDecoder readable should prevent decode()');
+
+test(() => {
+  const decoder = new TextDecoder();
+  assert_equals(string, decoder.decode(bytesAsArray), 'decode should work');
+  assert_true(decoder.readable.locked, 'readable should be locked');
+  assert_true(decoder.writable.locked, 'writable should be locked');
+}, 'calling the decode() method should lock the readable and writable');
+
+test(() => {
+  const decoder = new TextDecoder();
+  const reader = decoder.readable.getReader();
+  reader.releaseLock();
+  assert_equals(string, decoder.decode(bytesAsArray), 'decode should work');
+  assert_true(decoder.readable.locked, 'readable should be locked');
+  assert_true(decoder.writable.locked, 'writable should be locked');
+}, 'locking then unlocking the readable should not block the decode() method');
+
+test(() => {
+  const decoder = new TextDecoder();
+  const writer = decoder.writable.getWriter();
+  // The underlying transform is not called because there is backpressure
+  // because nothing is reading.
+  writer.write(bytesAsArray);
+  writer.releaseLock();
+  assert_equals(string, decoder.decode(bytesAsArray),
+                      'decode should work');
+  assert_true(decoder.readable.locked, 'readable should be locked');
+  assert_true(decoder.writable.locked, 'writable should be locked');
+}, 'locking, writing, then unlocking the writable should not block the ' +
+   'decode() method');
+
+promise_test(async () => {
+  const decoder = new TextDecoder();
+  const writer = decoder.writable.getWriter();
+  writer.write(bytesAsArray);
+  writer.releaseLock();
+  const reader = decoder.readable.getReader();
+  const { value, done } = await reader.read();
+  assert_false(done);
+  assert_equals(string, value, 'decoding should have happened');
+  reader.releaseLock();
+  assert_throws(new TypeError(), () => decoder.decode(string),
+                'decode should throw');
+  assert_false(decoder.readable.locked, 'readable should not be locked');
+  assert_false(decoder.writable.locked, 'writable should not be locked');
+}, 'once a streaming transform has taken place, decode() should throw');
 
 </script>
