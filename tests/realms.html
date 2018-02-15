@@ -108,7 +108,7 @@ async function evalInRealmAndReturn(realm, code) {
   return realm[myId];
 }
 
-// Construct an object in constructedRealm and copy it into readRealm and
+// Constructs an object in constructedRealm and copies it into readRealm and
 // writeRealm. Returns the id that can be used to access the object in those
 // realms. |what| can contain constructor arguments.
 async function constructAndStore(what) {
@@ -175,7 +175,7 @@ function runGenericTests(classname) {
                   'readable should be in method realm');
     assert_equals(writable.constructor, methodRealm.WritableStream,
                   'writable should be in method realm');
-  }, `${classname}\'s readable and writable attributes should come from the ` +
+  }, `${classname}'s readable and writable attributes should come from the ` +
      'same realm as the method definition');
 }
 
@@ -241,7 +241,8 @@ function runTextDecoderTests() {
     await writePromise;
     assert_equals(result.constructor, constructorRealm.Object,
                   'result should be in constructor realm');
-    // Strings are always in the current realm, so no point in checking.
+    // All strings have the same prototype object, regardless of which frame
+    // created them. So checking the realm of result.value is not meaningful.
   }, 'the result object when read is called after write should come from the ' +
      'same realm as the constructor of TextDecoder');
 
@@ -253,7 +254,8 @@ function runTextDecoderTests() {
     const result = await chunkPromise;
     assert_equals(result.constructor, constructorRealm.Object,
                   'result should be in constructor realm');
-    // Strings are always in the current realm, so no point in checking.
+    // All strings have the same prototype object, regardless of which frame
+    // created them. So checking the realm of result.value is not meaningful.
   }, 'the result object when write is called with a pending ' +
      'read should come from the same realm as the constructor of TextDecoder');
 
@@ -279,7 +281,7 @@ function runTextDecoderTests() {
       assert_equals(err.constructor, constructorRealm.TypeError,
                     'read TypeError should come from constructor realm');
     }
-  }, 'TypeError for chunk if the wrong type should come from constructor ' +
+  }, 'TypeError for chunk with the wrong type should come from constructor ' +
      'realm of TextDecoder');
 
   promise_test(async t => {
@@ -287,8 +289,6 @@ function runTextDecoderTests() {
           await constructAndStore(`TextDecoder('utf-8', {fatal: true})`);
     // Read first to relieve backpressure.
     const readPromise = readInReadRealm(objId);
-    // Write an invalid chunk.
-    const invalidBytesId = id();
     // promise_rejects() does not permit directly inspecting the rejection, so
     // it's necessary to write it out long-hand.
     try {
