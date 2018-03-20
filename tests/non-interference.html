@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<script src="resources/text-encode-transform.js"></script>
+<script src="resources/transform-stream.js"></script>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script>
+'use strict';
+
+// Tests to verify that the two types of API don't interfere with each other.
+
+const string = 'I \u{1F499} streams';
+const bytes = [73, 32, 240, 159, 146, 153, 32, 115, 116, 114, 101,
+                             97, 109, 115];
+const bytesAsArray = new Uint8Array(bytes);
+
+test(() => {
+  const encoder = new TextEncoder();
+  const writer = encoder.writable.getWriter();
+  assert_array_equals(encoder.encode(string), bytes, 'encode should work');
+  writer.releaseLock();
+  assert_array_equals(encoder.encode(string), bytes,
+                      'encode should still work');
+}, 'locking TextEncoder writable should not prevent encode()');
+
+test(() => {
+  const encoder = new TextEncoder();
+  const reader = encoder.readable.getReader();
+  assert_array_equals(encoder.encode(string), bytes, 'encode should work');
+  reader.releaseLock();
+  assert_array_equals(encoder.encode(string), bytes,
+                      'encode should still work');
+}, 'locking TextEncoder readable should not prevent encode()');
+
+test(() => {
+  const decoder = new TextDecoder();
+  const writer = decoder.writable.getWriter();
+  assert_equals(decoder.decode(bytesAsArray), string, 'decode should work');
+  writer.releaseLock();
+  assert_equals(decoder.decode(bytesAsArray), string,
+                'decode should still work');
+}, 'locking TextDecoder writable should not prevent decode()');
+
+test(() => {
+  const decoder = new TextDecoder();
+  const reader = decoder.readable.getReader();
+  assert_equals(decoder.decode(bytesAsArray), string,
+                'decode should work');
+  reader.releaseLock();
+  assert_equals(decoder.decode(bytesAsArray), string,
+                'decode should still work');
+}, 'locking TextDecoder readable should not prevent decode()');
+
+promise_test(() => {
+  const encoder = new TextEncoder();
+  const writer = encoder.writable.getWriter();
+
+  // Write first half of the surrogate pair.
+  writer.write('A\u{d83d}');
+
+  const reader = encoder.readable.getReader();
+  // Ensure the write has been processed.
+  return reader.read().then(({value, done}) => {
+    assert_false(done, 'should not be done');
+    assert_array_equals(value, [65],
+                        'only complete code point should be output');
+
+    // encode() API is totally independent, and will ignore the surrogate.
+    assert_array_equals(encoder.encode(string), bytes, 'encode should work');
+
+    // Second half of the surrogate pair.
+    writer.write('\u{dc99}');
+
+    return reader.read();
+  }).then(({value, done}) => {
+    assert_false(done, 'should not be done');
+    assert_array_equals(value, [240, 159, 146, 153],
+                        'surrogate pair should have been combined');
+  });
+}, 'encode() should not be influences by transform state');
+
+promise_test(() => {
+  const encoder = new TextEncoder();
+  const writer = encoder.writable.getWriter();
+
+  writer.write('A');
+  writer.close();
+
+  const reader = encoder.readable.getReader();
+  return reader.read().then(({value, done}) => {
+    assert_false(done, 'should not be done');
+    assert_array_equals(value, [65], 'transform should have worked');
+
+    return reader.read();
+  }).then(({value, done}) => {
+    assert_true(done, 'should be done');
+
+    return Promise.all([reader.closed, writer.closed]);
+  }).then(() => {
+    assert_array_equals(encoder.encode(string), bytes,
+                        'encode should still work');
+  });
+}, 'encode() should still work after transform is closed');
+
+promise_test(() => {
+  const encoder = new TextEncoder();
+  const writer = encoder.writable.getWriter();
+
+  return writer.abort().then(() => {
+    assert_array_equals(encoder.encode(string), bytes,
+                        'encode should still work');
+  });
+},  'encode() should still work after transform is aborted');
+
+promise_test(() => {
+  const decoder = new TextDecoder();
+  const writer = decoder.writable.getWriter();
+
+  writer.write(new Uint8Array(bytes.slice(0, 3)));
+
+  const reader = decoder.readable.getReader();
+  // Ensure the write has been processed.
+  return reader.read().then(({value, done}) => {
+    assert_false(done, 'should not be done');
+    assert_equals(value, string.substring(0, 2),
+                  'value should not include partial characters');
+
+    assert_equals(decoder.decode(new Uint8Array([65])), 'A',
+                  'decode should work');
+
+    writer.write(new Uint8Array(bytes.slice(3)));
+
+    return reader.read();
+  }).then(({value, done}) => {
+    assert_false(done, 'should not be done');
+    assert_equals(value, string.substring(2),
+                  'split character should have been assembled');
+  });
+}, 'decode() should not be influenced by transform state');
+
+// This is the same test, but with the roles reversed.
+promise_test(() => {
+  const decoder = new TextDecoder();
+
+  assert_equals(decoder.decode(new Uint8Array(bytes.slice(0, 3)),
+                               { stream: true }),
+                string.substring(0, 2),
+                'result should not include partial characters');
+
+  const writer = decoder.writable.getWriter();
+  writer.write(new Uint8Array([65]));
+
+  const reader = decoder.readable.getReader();
+  return reader.read().then(({value, done}) => {
+    assert_false(done, 'should not be done');
+    assert_equals(value, 'A', 'transform should work');
+
+    assert_equals(decoder.decode(new Uint8Array(bytes.slice(3))),
+                  string.substring(2),
+                  'split character should have been assembled');
+  });
+}, 'transform should not be influenced by decode() state');
+
+promise_test(() => {
+  const decoder = new TextDecoder();
+  const writer = decoder.writable.getWriter();
+
+  writer.write(new Uint8Array([65]));
+  writer.close();
+
+  const reader = decoder.readable.getReader();
+  return reader.read().then(({value, done}) => {
+    assert_false(done, 'should not be done');
+    assert_equals(value, 'A', 'transform should have worked');
+
+    return reader.read();
+  }).then(({value, done}) => {
+    assert_true(done, 'should be done');
+
+    return Promise.all([reader.closed, writer.closed]);
+  }).then(() => {
+    assert_equals(decoder.decode(bytesAsArray), string,
+                  'decode should still work');
+  });
+}, 'decode() should still work after transform is closed');
+
+promise_test(() => {
+  const decoder = new TextDecoder();
+  const writer = decoder.writable.getWriter();
+
+  return writer.abort().then(() => {
+    assert_equals(decoder.decode(bytesAsArray), string,
+                  'decode should still work');
+  });
+}, 'decode() should still work after transform is aborted');
+
+promise_test(t => {
+  const decoder = new TextDecoder('utf-8', { fatal: true });
+  const writer = decoder.writable.getWriter();
+
+  // 0xFF is never a valid byte in UTF-8.
+  writer.write(new Uint8Array([0xFF]));
+
+  const reader = decoder.readable.getReader();
+  return promise_rejects(t, new TypeError(), reader.read(),
+                         'read() should throw').then(() => {
+    assert_equals(decoder.decode(bytesAsArray), string,
+                  'decode should still work');
+  });
+}, 'decode() should still work after transform is errored');
+
+</script>
