@@ -1,5 +1,5 @@
 # Text Encoder Streaming Prollyfill
-ricea@chromium.org - last updated 16 November 2017
+ricea@chromium.org - last updated 20 March 2018
 
 The TextEncoder and TextDecoder APIs provide conversions between bytes and
 strings for Javascript in the browser. The Streams API is an API for processing
@@ -70,12 +70,9 @@ the prototype. These work by delegating to a
 created the first time they are accessed. The TransformStream is stored as a
 symbol property on the object, to avoid interfering with the usable namespace.
 
-The `encode()` and `decode()` methods are wrapped to verify that the readable
-and writable sides aren't locked before proceeding with the operation.
-
-`encode`, `decode` and the `readable` and `writable` getters are all defined as
-functions of the appropriate names, so that the `name` property on the function
-objects will be correct.
+The `readable` and `writable` getters are all defined as functions of the
+appropriate names, so that the `name` property on the function objects will be
+correct.
 
 ### Scalability
 

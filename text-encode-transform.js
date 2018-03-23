@@ -34,38 +34,6 @@
 
   const transform = Symbol('transform');
 
-  function throwIfLocked(obj) {
-    const ts = obj[transform];
-    if (ts === undefined) {
-      return;
-    }
-
-    if (ts.readable.locked) {
-      throw new TypeError('readable is locked');
-    }
-
-    if (ts.writable.locked) {
-      throw new TypeError('writable is locked');
-    }
-  }
-
-  const originalEncode = self.TextEncoder.prototype.encode;
-  const originalDecode = self.TextDecoder.prototype.decode;
-
-  function encode(input = '') {
-    throwIfLocked(this);
-    return originalEncode.call(this, input);
-  }
-
-  self.TextEncoder.prototype.encode = encode;
-
-  function decode(input = undefined, options = {}) {
-    throwIfLocked(this);
-    return originalDecode.call(this, input, options);
-  }
-
-  self.TextDecoder.prototype.decode = decode;
-
   function addReadableAndWritable(prototype, constructor) {
     function readable() {
       if (!this[transform]) {
@@ -96,8 +64,8 @@
                           });
   }
 
-  addReadableAndWritable(self.TextEncoder.prototype, encoder => {
-    return new TransformStream(new TextEncodeTransformer(encoder));
+  addReadableAndWritable(self.TextEncoder.prototype, () => {
+    return new TransformStream(new TextEncodeTransformer());
   });
 
   addReadableAndWritable(self.TextDecoder.prototype, decoder => {
@@ -105,8 +73,8 @@
   });
 
   class TextEncodeTransformer {
-    constructor(encoder) {
-      this._encoder = encoder;
+    constructor() {
+      this._encoder = new TextEncoder();
       this._carry = undefined;
     }
 
@@ -121,12 +89,12 @@
         this._carry = chunk.substring(chunk.length - 1);
         chunk = chunk.substring(0, chunk.length - 1);
       }
-      controller.enqueue(originalEncode.call(this._encoder, chunk));
+      controller.enqueue(this._encoder.encode(chunk));
     }
 
     flush(controller) {
       if (this._carry !== undefined) {
-        controller.enqueue(originalEncode.call(this._encoder, this._carry));
+        controller.enqueue(this._encoder.encode(this._carry));
         this._carry = undefined;
       }
     }
@@ -134,21 +102,23 @@
 
   class TextDecodeTransformer {
     constructor(decoder) {
-      this._decoder = decoder;
+      this._decoder = new TextDecoder(decoder.encoding, {
+        fatal: decoder.fatal,
+        ignoreBOM: decoder.ignoreBOM
+      });
     }
 
     transform(chunk, controller) {
-      controller.enqueue(originalDecode.call(this._decoder, chunk,
-                                             {stream: true}));
+      controller.enqueue(this._decoder.decode(chunk, {stream: true}));
     }
 
     flush(controller) {
-      // If {fatal: false} in options (the default), then the final call to
+      // If {fatal: false} is in options (the default), then the final call to
       // decode() can produce extra output (usually the unicode replacement
       // character 0xFFFD). When fatal is true, this call is just used for its
       // side-effect of throwing a TypeError exception if the input is
       // incomplete.
-      var output = originalDecode.call(this._decoder);
+      var output = this._decoder.decode();
       if (output !== '') {
         controller.enqueue(output);
       }
