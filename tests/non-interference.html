@@ -208,4 +208,21 @@ promise_test(t => {
   });
 }, 'decode() should still work after transform is errored');
 
+promise_test(t => {
+  const encoder = new TextEncoder();
+  const writer = encoder.writable.getWriter();
+
+  const badString = {
+    toString() { throw new Error('cannot convert to a string'); }
+  };
+  writer.write(badString);
+
+  const reader = encoder.readable.getReader();
+  return promise_rejects(t, new Error(), reader.read(),
+                         'read() should throw').then(() => {
+    assert_array_equals(encoder.encode(string), bytes,
+                        'encode should still work');
+  });
+}, 'encode() should still work after transform is errored');
+
 </script>

@@ -73,7 +73,7 @@
   });
 
   class TextEncodeTransformer {
-    constructor(encoder) {
+    constructor() {
       this._encoder = new TextEncoder();
       this._carry = undefined;
     }
