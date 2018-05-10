@@ -2,8 +2,9 @@
 
 ## Overview
 
-This is a prollyfill enabling TextEncoder and TextDecoder to be used as Stream
-transforms. It is based on the draft changes to the Encoding Standard here:
+This is a prollyfill for the transform streams TextEncoderStream and
+TextDecoderStream. It is based on the draft changes to the Encoding Standard
+here:
 
 http://htmlpreview.github.io/?https://github.com/ricea/encoding-streams/blob/master/patch.html
 
@@ -13,12 +14,8 @@ This is intended for experimentation and development of the standard.
 
 ## Requirements
 
-You need existing working TextEncoder and TextDecoder implementations in your
-user agent, either natively or via polyfill. This prollyfill wraps the
-implementation you already have.
-
-You need working ReadableStream, WritableStream and TransformStream
-implementations in your user agent, either natively or via polyfill.
+You need implementations of TextEncoder, TextDecoder, ReadableStream,
+WritableStream and TransformStream, either natively or via polyfill.
 
 ## How to use
 
@@ -38,18 +35,18 @@ Then you can use it in a pipe like this:
 
 ```javascript
 byteSource
-  .pipeThrough(new TextDecoder())
+  .pipeThrough(new TextDecoderStream())
   .pipeTo(textDestination);
 ```
 
 Any arguments that the TextDecoder constructor normally accepts will also work
 when used as a stream transform.
 
-TextEncoder works the same way:
+TextEncoderStream works the same way:
 
 ```javascript
 textSource
-  .pipeThrough(new TextEncoder())
+  .pipeThrough(new TextEncoderStream())
   .pipeTo(byteDestination);
 ```
 

@@ -1,10 +1,11 @@
 # Text Encoder Streaming Prollyfill
-ricea@chromium.org - last updated 20 March 2018
+ricea@chromium.org - last updated 6 May 2018
 
-The TextEncoder and TextDecoder APIs provide conversions between bytes and
-strings for Javascript in the browser. The Streams API is an API for processing
-streams of data in the browser. It is proposed to integrate these APIs so that
-TextEncoder and TextDecoder can be used directly with the Streams API.
+The existing TextEncoder and TextDecoder APIs provide conversions between bytes
+and strings for Javascript in the browser. The Streams API is an API for
+processing streams of data in the browser. It is proposed to create new
+TextEncoderStream and TextDecoderStream APIs so that text encoding and decoding
+can be done with the Streams API.
 
 The objective of this Prollyfill is to permit experimentation with the new
 standard. It is called a "Prollyfill" rather than a "Polyfill" because it
@@ -27,6 +28,9 @@ the meantime.
  - The prollyfill should be convenient to use.
  - The prollyfill should function within Workers as well as document
    environments.
+ - The prollyfill should be close enough to the intended standard to function
+   identically in non-pathological cases, and to permit tests to be developed
+   against it.
 
 ### Non-requirements
  - The prollyfill doesn't need to support environments that do not have the
@@ -35,6 +39,7 @@ the meantime.
    ReadableStream and WritableStream.
  - The prollyfill doesn't need to provide the maximum possible performance.
  - The prollyfill doesn't need to support versions of Javascript prior to ES6.
+ - The prollyfill doesn't need to have perfect fidelity to the standard.
 
 ## Assumptions
 
@@ -49,10 +54,11 @@ The prollyfill will be used by importing it into the page using a `<script>` tag
 prior to using the functionality. In Worker environments it will be imported
 using `importScripts()`.
 
-The interface provided is identical to [TextEncoder and TextDecoder as
-specified in the Encoding Standard](https://encoding.spec.whatwg.org/#api),
-with the addition of `readable` and `writable` attributes on the objects that
-permit it to be used with the [Streams pipeThrough
+The interface provided is similar to [TextEncoder and TextDecoder as specified
+in the Encoding Standard](https://encoding.spec.whatwg.org/#api), but instead of
+`encode()` and `decode()` methods, `readable` and `writable` getters permit it
+to function as a [transform stream](https://streams.spec.whatwg.org/#ts-model)
+and be used with the [Streams pipeThrough
 API](https://streams.spec.whatwg.org/#rs-pipe-through).
 
 ### Technology
@@ -63,16 +69,14 @@ implemented in [Javascript](http://www.ecma-international.org/ecma-262/6.0/).
 
 ### Implementation
 
-The prototypes of the existing TextEncoder and TextDecoder classes are modified
-to add the extra functionality. `readable` and `writable` getters are added to
-the prototype. These work by delegating to a
-[TransformStream](https://streams.spec.whatwg.org/#ts) object, which is lazily
-created the first time they are accessed. The TransformStream is stored as a
-symbol property on the object, to avoid interfering with the usable namespace.
+New classes TextEncoderStream and TextDecoderStream are created. Almost all
+functionality is delegated: `readable` and `writable` getters are delegated to a
+TransformStream that is created in the constructor, and the other getters are
+delegated to an underlying TextEncoder or TextDecoder that is also created in
+the constructor.
 
-The `readable` and `writable` getters are all defined as functions of the
-appropriate names, so that the `name` property on the function objects will be
-correct.
+The TransformStream and TextEncoder or Decoder are stored on the objects using
+symbols for encapsulation.
 
 ### Scalability
 
