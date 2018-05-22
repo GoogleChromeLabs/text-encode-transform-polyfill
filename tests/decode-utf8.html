@@ -14,7 +14,7 @@ const expectedOutputString = 'I \u{1F499} streams';
 
 promise_test(async () => {
   const input = readableStreamFromArray([new Uint8Array(inputBytes)]);
-  const output = input.pipeThrough(new TextDecoder());
+  const output = input.pipeThrough(new TextDecoderStream());
   const array = await readableStreamToArray(output);
   assert_array_equals(array, [expectedOutputString],
                       'the output should be in one chunk');

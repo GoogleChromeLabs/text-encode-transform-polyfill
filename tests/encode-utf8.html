@@ -94,7 +94,7 @@ const testCases = [
 for (const {input, output, description} of testCases) {
   promise_test(async () => {
     const inputStream = readableStreamFromArray(input);
-    const outputStream = inputStream.pipeThrough(new TextEncoder());
+    const outputStream = inputStream.pipeThrough(new TextEncoderStream());
     const chunkArray = await readableStreamToArray(outputStream);
     assert_equals(chunkArray.length, output.length,
                   'number of chunks should match');

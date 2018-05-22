@@ -12,7 +12,7 @@ const inputBytes = [229];
 
 promise_test(async () => {
   const input = readableStreamFromArray([new Uint8Array(inputBytes)]);
-  const output = input.pipeThrough(new TextDecoder());
+  const output = input.pipeThrough(new TextDecoderStream());
   const array = await readableStreamToArray(output);
   assert_array_equals(array, ['', '\uFFFD'], 'array should match expectation');
 }, 'incomplete input with error mode "replacement" should end with a ' +
@@ -20,7 +20,8 @@ promise_test(async () => {
 
 promise_test(async t => {
   const input = readableStreamFromArray([new Uint8Array(inputBytes)]);
-  const output = input.pipeThrough(new TextDecoder('utf-8', {fatal: true}));
+  const output = input.pipeThrough(new TextDecoderStream(
+      'utf-8', {fatal: true}));
   const reader = output.getReader();
   const result = await reader.read()
   assert_equals(result.value, '', 'first chunk should be empty');

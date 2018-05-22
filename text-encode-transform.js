@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Prollyfill for Stream support for TextEncoder and TextDecoder
+// Prollyfill for TextEncoderStream and TextDecoderStream
 
 (function() {
   'use strict';
@@ -25,52 +25,58 @@
     throw new ReferenceError('TextDecoder implementation required');
   }
 
-  if ('readable' in self.TextEncoder.prototype &&
-      'writable' in self.TextEncoder.prototype &&
-      'readable' in self.TextDecoder.prototype &&
-      'writable' in self.TextDecoder.prototype) {
-    return;
-  }
-
+  // These symbols end up being different for every realm, so mixing objects
+  // created in one realm with methods created in another fails.
+  const codec = Symbol('codec');
   const transform = Symbol('transform');
 
-  function addReadableAndWritable(prototype, constructor) {
-    function readable() {
-      if (!this[transform]) {
-        this[transform] = constructor(this);
-      }
-      return this[transform].readable;
+  class TextEncoderStream {
+    constructor() {
+      this[codec] = new TextEncoder();
+      this[transform] =
+          new TransformStream(new TextEncodeTransformer(this[codec]));
+    }
+  }
+
+  class TextDecoderStream {
+    constructor(label = undefined, options = undefined) {
+      this[codec] = new TextDecoder(label, options);
+      this[transform] = new TransformStream(
+          new TextDecodeTransformer(this[codec]));
+    }
+  }
+
+  // ECMAScript class syntax will create getters that are non-enumerable, but we
+  // need them to be enumerable in WebIDL-style, so we add them manually.
+  // "readable" and "writable" are always delegated to the TransformStream
+  // object. Properties specified in |properties| are delegated to the
+  // underlying TextEncoder or TextDecoder.
+  function addDelegatingProperties(prototype, properties) {
+    for (const transformProperty of ['readable', 'writable']) {
+      addGetter(prototype, transformProperty, function() {
+        return this[transform][transformProperty];
+      });
     }
 
-    function writable() {
-      if (!this[transform]) {
-        this[transform] = constructor(this);
-      }
-      return this[transform].writable;
+    for (const codecProperty of properties) {
+      addGetter(prototype, codecProperty, function() {
+        return this[codec][codecProperty];
+      });
     }
+  }
 
-    Object.defineProperty(prototype, 'readable',
+  function addGetter(prototype, property, getter) {
+    Object.defineProperty(prototype, property,
                           {
                             configurable: true,
                             enumerable: true,
-                            get: readable
-                          });
-
-    Object.defineProperty(prototype, 'writable',
-                          {
-                            configurable: true,
-                            enumerable: true,
-                            get: writable
+                            get: getter
                           });
   }
 
-  addReadableAndWritable(self.TextEncoder.prototype, () => {
-    return new TransformStream(new TextEncodeTransformer());
-  });
-
-  addReadableAndWritable(self.TextDecoder.prototype, decoder => {
-    return new TransformStream(new TextDecodeTransformer(decoder));
-  });
+  addDelegatingProperties(TextEncoderStream.prototype, ['encoding']);
+  addDelegatingProperties(TextDecoderStream.prototype,
+                          ['encoding', 'fatal', 'ignoreBOM']);
 
   class TextEncodeTransformer {
     constructor() {
@@ -124,4 +130,19 @@
       }
     }
   }
+
+  function exportAs(name, value) {
+    // Make it stringify as [object <name>] rather than [object Object].
+    value.prototype[Symbol.toStringTag] = name;
+    Object.defineProperty(self, name,
+                          {
+                            configurable: true,
+                            enumerable: false,
+                            writable: true,
+                            value
+                          });
+  }
+
+  exportAs('TextEncoderStream', TextEncoderStream);
+  exportAs('TextDecoderStream', TextDecoderStream);
 })();

@@ -17,7 +17,7 @@ for (const splitPoint of [2, 3, 4, 5]) {
     const input = readableStreamFromArray(
         [new Uint8Array(inputBytes.slice(0, splitPoint)),
          new Uint8Array(inputBytes.slice(splitPoint))]);
-    const output = input.pipeThrough(new TextDecoder());
+    const output = input.pipeThrough(new TextDecoderStream());
     const array = await readableStreamToArray(output);
     assert_array_equals(array, expectedOutput,
                         'the split code point should be in the second chunk ' +
@@ -31,7 +31,7 @@ promise_test(async () => {
   const input = readableStreamFromArray(
       [new Uint8Array(inputBytes.slice(0, splitPoint)),
        new Uint8Array(inputBytes.slice(splitPoint))]);
-  const output = input.pipeThrough(new TextDecoder());
+  const output = input.pipeThrough(new TextDecoderStream());
   const array = await readableStreamToArray(output);
   assert_array_equals(array, ['I \u{1F499}', ' streams'],
                       'the multibyte character should be in the first chunk ' +

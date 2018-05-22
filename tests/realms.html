@@ -6,7 +6,7 @@
 <script>
 'use strict';
 
-// Test that objects created by the streaming TextEncoder and TextDecoder APIs
+// Test that objects created by the TextEncoderStream and TextDecoderStream APIs
 // are created in the correct realm. The tests work by creating an iframe for
 // each realm and then posting Javascript to them to be evaluated. Inputs and
 // outputs are passed around via global variables in each realm's scope.
@@ -139,10 +139,10 @@ parent.writeMethod.call(window.${objId}.writable.getWriter(),
 
 window.onload = () => {
   createRealms().then(() => {
-    runGenericTests('TextEncoder');
-    runTextEncoderTests();
-    runGenericTests('TextDecoder');
-    runTextDecoderTests();
+    runGenericTests('TextEncoderStream');
+    runTextEncoderStreamTests();
+    runGenericTests('TextDecoderStream');
+    runTextDecoderStreamTests();
     done();
   });
 };
@@ -179,9 +179,9 @@ function runGenericTests(classname) {
      'same realm as the method definition');
 }
 
-function runTextEncoderTests() {
+function runTextEncoderStreamTests() {
   promise_test(async () => {
-    const objId = await constructAndStore('TextEncoder');
+    const objId = await constructAndStore('TextEncoderStream');
     const writePromise = writeInWriteRealm(objId, 'A');
     const result = await readInReadRealm(objId);
     await writePromise;
@@ -190,10 +190,10 @@ function runTextEncoderTests() {
     assert_equals(result.value.constructor, constructorRealm.Uint8Array,
                   'chunk should be in constructor realm');
   }, 'the output chunks when read is called after write should come from the ' +
-     'same realm as the constructor of TextEncoder');
+     'same realm as the constructor of TextEncoderStream');
 
   promise_test(async () => {
-    const objId = await constructAndStore('TextEncoder');
+    const objId = await constructAndStore('TextEncoderStream');
     const chunkPromise = readInReadRealm(objId);
     writeInWriteRealm(objId, 'A');
     // Now the read() should resolve.
@@ -203,10 +203,10 @@ function runTextEncoderTests() {
     assert_equals(result.value.constructor, constructorRealm.Uint8Array,
                   'chunk should be in constructor realm');
   }, 'the output chunks when write is called with a pending read should come ' +
-     'from the same realm as the constructor of TextEncoder');
+     'from the same realm as the constructor of TextEncoderStream');
 
   promise_test(async t => {
-    const objId = await constructAndStore('TextEncoder');
+    const objId = await constructAndStore('TextEncoderStream');
     // Read first to relieve backpressure.
     const readPromise = readInReadRealm(objId);
     // promise_rejects() does not permit directly inspecting the rejection, so
@@ -230,12 +230,12 @@ function runTextEncoderTests() {
                     'read TypeError should come from constructor realm');
     }
   }, 'TypeError for unconvertable chunk should come from constructor realm ' +
-     'of TextEncoder');
+     'of TextEncoderStream');
 }
 
-function runTextDecoderTests() {
+function runTextDecoderStreamTests() {
   promise_test(async () => {
-    const objId = await constructAndStore('TextDecoder');
+    const objId = await constructAndStore('TextDecoderStream');
     const writePromise = writeInWriteRealm(objId, new Uint8Array([65]));
     const result = await readInReadRealm(objId);
     await writePromise;
@@ -244,10 +244,10 @@ function runTextDecoderTests() {
     // All strings have the same prototype object, regardless of which frame
     // created them. So checking the realm of result.value is not meaningful.
   }, 'the result object when read is called after write should come from the ' +
-     'same realm as the constructor of TextDecoder');
+     'same realm as the constructor of TextDecoderStream');
 
   promise_test(async () => {
-    const objId = await constructAndStore('TextDecoder');
+    const objId = await constructAndStore('TextDecoderStream');
     const chunkPromise = readInReadRealm(objId);
     writeInWriteRealm(objId, new Uint8Array([65]));
     // Now the read() should resolve.
@@ -257,10 +257,10 @@ function runTextDecoderTests() {
     // All strings have the same prototype object, regardless of which frame
     // created them. So checking the realm of result.value is not meaningful.
   }, 'the result object when write is called with a pending ' +
-     'read should come from the same realm as the constructor of TextDecoder');
+     'read should come from the same realm as the constructor of TextDecoderStream');
 
   promise_test(async t => {
-    const objId = await constructAndStore('TextDecoder');
+    const objId = await constructAndStore('TextDecoderStream');
     // Read first to relieve backpressure.
     const readPromise = readInReadRealm(objId);
     // promise_rejects() does not permit directly inspecting the rejection, so
@@ -282,11 +282,11 @@ function runTextDecoderTests() {
                     'read TypeError should come from constructor realm');
     }
   }, 'TypeError for chunk with the wrong type should come from constructor ' +
-     'realm of TextDecoder');
+     'realm of TextDecoderStream');
 
   promise_test(async t => {
     const objId =
-          await constructAndStore(`TextDecoder('utf-8', {fatal: true})`);
+          await constructAndStore(`TextDecoderStream('utf-8', {fatal: true})`);
     // Read first to relieve backpressure.
     const readPromise = readInReadRealm(objId);
     // promise_rejects() does not permit directly inspecting the rejection, so
@@ -307,11 +307,11 @@ function runTextDecoderTests() {
                     'read TypeError should come from constructor realm');
     }
   }, 'TypeError for invalid chunk should come from constructor realm ' +
-     'of TextDecoder');
+     'of TextDecoderStream');
 
   promise_test(async t => {
     const objId =
-          await constructAndStore(`TextDecoder('utf-8', {fatal: true})`);
+          await constructAndStore(`TextDecoderStream('utf-8', {fatal: true})`);
     // Read first to relieve backpressure.
     readInReadRealm(objId);
     // Write an unfinished sequence of bytes.
@@ -336,7 +336,7 @@ function runTextDecoderTests() {
                     'close TypeError should come from constructor realm');
     }
   }, 'TypeError for incomplete input should come from constructor realm ' +
-     'of TextDecoder');
+     'of TextDecoderStream');
 }
 
 </script>
