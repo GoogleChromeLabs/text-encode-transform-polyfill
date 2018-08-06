@@ -37,4 +37,20 @@ promise_test(async () => {
                       'the multibyte character should be in the first chunk ' +
                       'of the output');
 }, 'a code point should be emitted as soon as all bytes are available');
+
+for (let splitPoint = 1; splitPoint < 7; ++splitPoint) {
+  promise_test(async () => {
+    const input = readableStreamFromArray(
+      [new Uint8Array(inputBytes.slice(0, splitPoint)),
+       new Uint8Array([]),
+       new Uint8Array(inputBytes.slice(splitPoint))]);
+    const output = input.pipeThrough(new TextDecoderStream());
+    const array = await readableStreamToArray(output);
+    assert_equals(array.length, 2, 'two chunks should be output');
+    assert_equals(array[0].concat(array[1]),
+                  expectedOutput[0].concat(expectedOutput[1]),
+                  'output should be unchanged by the empty chunk');
+  }, 'an empty chunk inside a code point split between chunks should not ' +
+     'change the output; split point = ' + splitPoint);
+}
 </script>
