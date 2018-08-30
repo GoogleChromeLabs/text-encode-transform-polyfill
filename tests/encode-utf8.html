@@ -17,7 +17,6 @@ const astralCharacterEncoded = [0xf0, 0x9f, 0x92, 0x99];
 const leading = astralCharacter[0];
 const trailing = astralCharacter[1];
 const replacementEncoded = [0xef, 0xbf, 0xbd];
-const emptyChunk = [];
 
 // These tests assume that the implementation correctly classifies leading and
 // trailing surrogates and treats all the code units in each set equivalently.
@@ -30,41 +29,41 @@ const testCases = [
   },
   {
     input: [leading, trailing],
-    output: [emptyChunk, astralCharacterEncoded],
+    output: [astralCharacterEncoded],
     description: 'a character split between chunks should be correctly encoded'
   },
   {
     input: [leading],
-    output: [emptyChunk, replacementEncoded],
+    output: [replacementEncoded],
     description: 'a stream ending in a leading surrogate should emit a ' +
         'replacement character as a final chunk'
   },
   {
     input: [leading, astralCharacter],
-    output: [emptyChunk, replacementEncoded.concat(astralCharacterEncoded)],
+    output: [replacementEncoded.concat(astralCharacterEncoded)],
     description: 'an unmatched surrogate at the end of a chunk followed by ' +
         'an astral character in the next chunk should be replaced with ' +
         'the replacement character at the start of the next output chunk'
   },
   {
     input: [leading, 'A'],
-    output: [emptyChunk, replacementEncoded.concat([65])],
+    output: [replacementEncoded.concat([65])],
     description: 'an unmatched surrogate at the end of a chunk followed by ' +
         'an ascii character in the next chunk should be replaced with ' +
         'the replacement character at the start of the next output chunk'
   },
   {
     input: [leading, leading, trailing],
-    output: [emptyChunk, replacementEncoded, astralCharacterEncoded],
+    output: [replacementEncoded, astralCharacterEncoded],
     description: 'an unmatched surrogate at the end of a chunk followed by ' +
         'a plane 1 character split into two chunks should result in ' +
         'the encoded plane 1 character appearing in the last output chunk'
   },
   {
     input: [leading, leading],
-    output: [emptyChunk, replacementEncoded, replacementEncoded],
-    description: 'two leading chunks should result in an empty chunk and ' +
-        'two replacement characters'
+    output: [replacementEncoded, replacementEncoded],
+    description: 'two leading chunks should result in two replacement ' +
+        'characters'
   },
   {
     input: [leading + leading, trailing],
@@ -80,14 +79,29 @@ const testCases = [
   },
   {
     input: [leading, '', trailing],
-    output: [emptyChunk, emptyChunk, astralCharacterEncoded],
+    output: [astralCharacterEncoded],
     description: 'a leading surrogate chunk should be carried past empty chunks'
   },
   {
     input: [leading, ''],
-    output: [emptyChunk, emptyChunk, replacementEncoded],
+    output: [replacementEncoded],
     description: 'a leading surrogate chunk should error when it is clear ' +
         'it didn\'t form a pair'
+  },
+  {
+    input: [''],
+    output: [],
+    description: 'an empty string should result in no output chunk'
+  },
+  {
+    input: ['', inputString],
+    output: [expectedOutputBytes],
+    description: 'a leading empty chunk should be ignored'
+  },
+  {
+    input: [inputString, ''],
+    output: [expectedOutputBytes],
+    description: 'a trailing empty chunk should be ignored'
   }
 ];
 

@@ -95,7 +95,10 @@
         this._carry = chunk.substring(chunk.length - 1);
         chunk = chunk.substring(0, chunk.length - 1);
       }
-      controller.enqueue(this._encoder.encode(chunk));
+      const encoded = this._encoder.encode(chunk);
+      if (encoded.length > 0) {
+        controller.enqueue(encoded);
+      }
     }
 
     flush(controller) {
@@ -115,7 +118,10 @@
     }
 
     transform(chunk, controller) {
-      controller.enqueue(this._decoder.decode(chunk, {stream: true}));
+      const decoded = this._decoder.decode(chunk, {stream: true});
+      if (decoded != '') {
+        controller.enqueue(decoded);
+      }
     }
 
     flush(controller) {
