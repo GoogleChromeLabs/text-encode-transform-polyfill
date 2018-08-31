@@ -50,20 +50,8 @@ textSource
 
 ## Tests
 
-Tests in web-platform-test format are included in the tests/ directory. The
-tests use infrastructure from the https://github.com/w3c/web-platform-tests
-repository. You will need to run the tests under the web-platform-tests HTTP
-server.
-
-The tests expect the TransformStream polyfill to be installed in a parallel
-directory to this one named transform-stream-polyfill. You can get the polyfill
-from
-https://github.com/whatwg/streams/blob/transform-stream-polyfill/reference-implementation/contrib/transform-stream-polyfill.js
-
-The tests import the polyfills from tests/resources. By default symbolic links
-are used; if they don't work in your environment they can just be copied
-there. If your browser supports TransformStream natively then replacing
-tests/releases/transform-stream.js with an empty file should work.
+Tests have moved to the main web-platform-tests repository at
+https://github.com/web-platform-tests/wpt/tree/master/encoding/streams.
 
 ### See also
 
