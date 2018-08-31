@@ -2,15 +2,13 @@
 
 ## Overview
 
-This is a prollyfill for the transform streams TextEncoderStream and
-TextDecoderStream. It is based on the draft changes to the Encoding Standard
-here:
+This is a polyfill for the transform streams TextEncoderStream and
+TextDecoderStream. It is based on the TextEncoderStream and TextDecoderStream
+interfaces from the Encoding Standard:
 
-http://htmlpreview.github.io/?https://github.com/ricea/encoding-streams/blob/master/patch.html
+https://encoding.spec.whatwg.org/#interface-textdecoderstream
 
-However, it may be out-of-sync with that document.
-
-This is intended for experimentation and development of the standard.
+It is intended for experimentation with the standard.
 
 ## Requirements
 
@@ -19,7 +17,7 @@ WritableStream and TransformStream, either natively or via polyfill.
 
 ## How to use
 
-Include the prollyfill in the page:
+Include the polyfill in the page:
 
 ```javascript
 <script src="text-encode-transform.js">

@@ -1,5 +1,5 @@
-# Text Encoder Streaming Prollyfill
-ricea@chromium.org - last updated 6 May 2018
+# Text Encoder Streaming Polyfill
+ricea@chromium.org - last updated 30 August 2018
 
 The existing TextEncoder and TextDecoder APIs provide conversions between bytes
 and strings for Javascript in the browser. The Streams API is an API for
@@ -7,50 +7,44 @@ processing streams of data in the browser. It is proposed to create new
 TextEncoderStream and TextDecoderStream APIs so that text encoding and decoding
 can be done with the Streams API.
 
-The objective of this Prollyfill is to permit experimentation with the new
-standard. It is called a "Prollyfill" rather than a "Polyfill" because it
-implements what the standard might be rather than what the standard is.
-
 ## Motivation
 
 Integration between the Streams API and the Encoding API is useful, however it
-doesn't exist yet. This prollyfill provides a bridge to allow experimentation in
-the meantime.
+is not implemented in browsers yet. This polyfill provides a bridge to allow
+using the new APIs in the meantime.
 
 ## Requirements & Scope
 
 ### Requirements
- - The prollyfill must work in browsers that have implementations of the
+ - The polyfill must work in browsers that have implementations of the
    pre-requisite APIs.
- - The prollyfill should implement the expected API with the expected semantics.
- - The prollyfill should enable development of web platform tests.
- - The prollyfill should provide acceptable performance.
- - The prollyfill should be convenient to use.
- - The prollyfill should function within Workers as well as document
+ - The polyfill should implement the expected API with the expected semantics.
+ - The polyfill should provide acceptable performance.
+ - The polyfill should be convenient to use.
+ - The polyfill should function within Workers as well as document
    environments.
- - The prollyfill should be close enough to the intended standard to function
-   identically in non-pathological cases, and to permit tests to be developed
-   against it.
+ - The polyfill should be close enough to the intended standard to function
+   identically in non-pathological cases.
 
 ### Non-requirements
- - The prollyfill doesn't need to support environments that do not have the
+ - The polyfill doesn't need to support environments that do not have the
    TextEncoder and TextDecoder APIs.
- - The prollyfill doesn't need to support environments that do not support
+ - The polyfill doesn't need to support environments that do not support
    ReadableStream and WritableStream.
- - The prollyfill doesn't need to provide the maximum possible performance.
- - The prollyfill doesn't need to support versions of Javascript prior to ES6.
- - The prollyfill doesn't need to have perfect fidelity to the standard.
+ - The polyfill doesn't need to provide the maximum possible performance.
+ - The polyfill doesn't need to support versions of Javascript prior to ES6.
+ - The polyfill doesn't need to have perfect fidelity to the standard.
 
 ## Assumptions
 
 - All the browsers that meet the other requirements will support ES6.
-- The prollyfill can be modified as standardisation proceeds.
+- The polyfill can be modified as standardisation proceeds.
 
 ## Detailed Design
 
 ### Interface
 
-The prollyfill will be used by importing it into the page using a `<script>` tag
+The polyfill will be used by importing it into the page using a `<script>` tag
 prior to using the functionality. In Worker environments it will be imported
 using `importScripts()`.
 
@@ -63,7 +57,7 @@ API](https://streams.spec.whatwg.org/#rs-pipe-through).
 
 ### Technology
 
-The prollyfill builds upon [The Web
+The polyfill builds upon [The Web
 Platform](http://tess.oconnor.cx/2009/05/what-the-web-platform-is) and is
 implemented in [Javascript](http://www.ecma-international.org/ecma-262/6.0/).
 
@@ -90,7 +84,7 @@ There will be no explicit monitoring.
 
 ### Redundancy & Reliability
 
-The prollyfill applies the same redundancy practices as the web platform as a
+The polyfill applies the same redundancy practices as the web platform as a
 whole. Generally, it us up to developers or frameworks to provide redundancy,
 and this API is agnostic to the approach taken.
 
@@ -107,10 +101,7 @@ No privacy implications.
 
 ## Open Questions & Risks
 
-There is general consensus that this integration should happen, but the exact
-shape of it has not been agreed yet.
-
-There is a risk that the integration will never happen.
+None known.
 
 ## Tasks & Estimates
 
