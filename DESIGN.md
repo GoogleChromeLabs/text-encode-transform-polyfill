@@ -1,5 +1,5 @@
 # Text Encoder Streaming Polyfill
-ricea@chromium.org - last updated 30 August 2018
+ricea@chromium.org - last updated 31 October 2018
 
 The existing TextEncoder and TextDecoder APIs provide conversions between bytes
 and strings for Javascript in the browser. The Streams API is an API for
@@ -17,7 +17,7 @@ using the new APIs in the meantime.
 
 ### Requirements
  - The polyfill must work in browsers that have implementations of the
-   pre-requisite APIs.
+   prerequisite APIs.
  - The polyfill should implement the expected API with the expected semantics.
  - The polyfill should provide acceptable performance.
  - The polyfill should be convenient to use.
@@ -32,7 +32,7 @@ using the new APIs in the meantime.
  - The polyfill doesn't need to support environments that do not support
    ReadableStream and WritableStream.
  - The polyfill doesn't need to provide the maximum possible performance.
- - The polyfill doesn't need to support versions of Javascript prior to ES6.
+ - The polyfill doesn't need to support versions of JavaScript prior to ES6.
  - The polyfill doesn't need to have perfect fidelity to the standard.
 
 ## Assumptions
@@ -59,7 +59,7 @@ API](https://streams.spec.whatwg.org/#rs-pipe-through).
 
 The polyfill builds upon [The Web
 Platform](http://tess.oconnor.cx/2009/05/what-the-web-platform-is) and is
-implemented in [Javascript](http://www.ecma-international.org/ecma-262/6.0/).
+implemented in [JavaScript](http://www.ecma-international.org/ecma-262/6.0/).
 
 ### Implementation
 
@@ -85,7 +85,7 @@ There will be no explicit monitoring.
 ### Redundancy & Reliability
 
 The polyfill applies the same redundancy practices as the web platform as a
-whole. Generally, it us up to developers or frameworks to provide redundancy,
+whole. Generally, it is up to developers or frameworks to provide redundancy,
 and this API is agnostic to the approach taken.
 
 The TextDecoder API provides various options for error handling, and these are
@@ -105,14 +105,14 @@ None known.
 
 ## Tasks & Estimates
 
-1. Write one short Javascript file. Estimate: 1 hour.
+1. Write one short JavaScript file. Estimate: 1 hour.
 2. Write some tests. Estimate: 1 hour.
-3. Test the Javascript against the tests. Estimate: 20 minutes.
+3. Test the JavaScript against the tests. Estimate: 20 minutes.
 
 ## Future Improvements
 
  - Performance may be improved if there is demand.
- - A build system for integration with Javascript bundling systems and minifiers
+ - A build system for integration with JavaScript bundling systems and minifiers
    may be added.
 
 ## Similar Projects
