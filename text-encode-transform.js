@@ -17,6 +17,12 @@
 (function() {
   'use strict';
 
+  if (typeof self.TextEncoderStream === 'function' &&
+      typeof self.TextDecoderStream === 'function') {
+    // The constructors exist. Assume that they work and don't replace them.
+    return;
+  }
+
   if (typeof self.TextEncoder !== 'function') {
     throw new ReferenceError('TextEncoder implementation required');
   }
